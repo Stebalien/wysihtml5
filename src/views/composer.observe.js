@@ -27,18 +27,38 @@
         pasteEvents         = ["drop", "paste"];
 
     // --------- destroy:composer event ---------
-    dom.observe(iframe, "DOMNodeRemoved", function() {
-      clearInterval(domNodeRemovedInterval);
-      that.parent.fire("destroy:composer");
-    });
+    if (wysihtml5.browser.hasMutationObserverSupport()) {
+      var observer = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          var mutation = mutations[i];
+          if (mutation.type === 'childList') {
+            var nodes = mutation.removedNodes,
+                len = nodes.length;
+            for (var j = 0; j < len; j++) {
+              var node = nodes[j];
+              if (node === iframe || node.contains(iframe)) {
+                that.parent.fire("destroy:composer");
+                return;
+              }
+            }
+          }
+        }
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
 
-    // DOMNodeRemoved event is not supported in IE 8
-    var domNodeRemovedInterval = setInterval(function() {
-      if (!dom.contains(document.documentElement, iframe)) {
-        clearInterval(domNodeRemovedInterval);
+    } else if (wysihtml5.browser.hasMutationEventSupport()) {
+      dom.observe(iframe, "DOMNodeRemovedFromDocument", function() {
         that.parent.fire("destroy:composer");
-      }
-    }, 250);
+      });
+    } else {
+      // DOMNodeRemoved event is not supported in IE 8
+      var domNodeRemovedInterval = setInterval(function() {
+        if (!dom.contains(document.documentElement, iframe)) {
+          clearInterval(domNodeRemovedInterval);
+          that.parent.fire("destroy:composer");
+        }
+      }, 250);
+    }
 
     // --------- Focus & blur logic ---------
     dom.observe(focusBlurElement, "focus", function() {

@@ -354,6 +354,12 @@ wysihtml5.browser = (function() {
      */
     createsNestedInvalidMarkupAfterPaste: function() {
       return isWebKit;
+    },
+    hasMutationObserverSupport: function() {
+      return window.hasOwnProperty("MutationObserver");
+    },
+    hasMutationEventSupport: function() {
+      return window.hasOwnProperty("MutationEvent");
     }
   };
 })();
